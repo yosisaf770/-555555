@@ -4,147 +4,381 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ניהול עסק סופר סתם - יוסי</title>
-    <!-- טעינת ספריות לעבודה ישירה בדפדפן -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;700;800&display=swap');
-        body { font-family: 'Assistant', sans-serif; -webkit-tap-highlight-color: transparent; }
+        @import url('https://fonts.googleapis.com/css2?family=Assistant:wght@200;300;400;600;700;800&display=swap');
+        
+        body { 
+            font-family: 'Assistant', sans-serif; 
+            -webkit-tap-highlight-color: transparent;
+            margin: 0;
+            padding: 0;
+            transition: background 0.5s ease;
+        }
+
         input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
+        
+        .counter-btn {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .counter-btn:active { transform: scale(0.8); }
+
+        .modal-overlay {
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+        }
+
+        .project-item {
+            transition: transform 0.2s ease;
+        }
+        .project-item:active { transform: scale(0.97); }
+
+        /* כרטיסים צפים עם צל עמוק לניגודיות */
+        .contrast-card {
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2);
+        }
+
+        #root { width: 100%; overflow-x: hidden; }
     </style>
 </head>
-<body class="bg-slate-50">
+<body>
     <div id="root"></div>
 
     <script type="text/babel">
         const { useState, useEffect } = React;
 
-        // אייקונים בתוך הקוד ללא תלות באינטרנט חיצוני
-        const IconScroll = () => (
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 17V5a2 2 0 0 0-2-2H4"/><path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2"/><path d="M15 21v-2"/></svg>
-        );
-        const IconPlus = () => (
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-        );
-        const IconMinus = () => (
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-        );
-        const IconWallet = () => (
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"/><path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4h-4z"/></svg>
-        );
-        const IconTag = () => (
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
-        );
+        // Icons
+        const IconScroll = () => (<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 17V5a2 2 0 0 0-2-2H4"/><path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2"/><path d="M15 21v-2"/></svg>);
+        const IconPlus = (p) => (<svg xmlns="http://www.w3.org/2000/svg" width={p.size || 18} height={p.size || 18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>);
+        const IconMinus = (p) => (<svg xmlns="http://www.w3.org/2000/svg" width={p.size || 18} height={p.size || 18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>);
+        const IconTrash = (p) => (<svg xmlns="http://www.w3.org/2000/svg" width={p.size || 16} height={p.size || 16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>);
+        const IconEdit = (p) => (<svg xmlns="http://www.w3.org/2000/svg" width={p.size || 14} height={p.size || 14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>);
+        const IconArrowLeft = () => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>);
+        const IconSettings = () => (<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>);
+
+        // תבניות עיצוב משודרגות עם ניגודיות גבוהה
+        const THEMES = [
+            { id: 'pro_scribe', name: 'סופר פרימיום', appBg: 'bg-gradient-to-br from-amber-500 via-amber-600 to-amber-700', card: 'bg-white', text: 'text-slate-900', secondary: 'text-slate-500', summary: 'from-slate-900 to-black', accent: 'text-amber-600', icon: '#fff' },
+            { id: 'deep_ocean', name: 'אוקיינוס עמוק', appBg: 'bg-gradient-to-tr from-blue-900 via-indigo-900 to-slate-900', card: 'bg-white', text: 'text-slate-900', secondary: 'text-slate-500', summary: 'from-blue-500 to-cyan-500', accent: 'text-blue-600', icon: '#60a5fa' },
+            { id: 'forest_gold', name: 'יער מוזהב', appBg: 'bg-gradient-to-br from-emerald-800 via-emerald-900 to-teal-950', card: 'bg-[#fdfcf0]', text: 'text-emerald-950', secondary: 'text-emerald-700/60', summary: 'from-amber-400 to-amber-600', accent: 'text-emerald-700', icon: '#fbbf24' },
+            { id: 'lava_dark', name: 'לבה בוערת', appBg: 'bg-gradient-to-br from-red-600 via-orange-700 to-stone-900', card: 'bg-white', text: 'text-slate-900', secondary: 'text-slate-400', summary: 'from-black to-slate-800', accent: 'text-red-600', icon: '#fff' },
+            { id: 'clean_modern', name: 'מינימליזם נקי', appBg: 'bg-gradient-to-br from-slate-100 via-white to-slate-200', card: 'bg-slate-900', text: 'text-white', secondary: 'text-slate-400', summary: 'from-emerald-500 to-teal-500', accent: 'text-emerald-400', icon: '#0f172a' },
+            { id: 'royal_indigo', name: 'אינדיגו מלכותי', appBg: 'bg-gradient-to-tr from-indigo-600 via-violet-700 to-purple-800', card: 'bg-white', text: 'text-indigo-950', secondary: 'text-indigo-500', summary: 'from-amber-400 to-yellow-500', accent: 'text-indigo-600', icon: '#fff' },
+            { id: 'mint_luxury', name: 'מנטה יוקרתי', appBg: 'bg-gradient-to-br from-teal-400 via-emerald-500 to-green-600', card: 'bg-slate-900 text-white', text: 'text-white', secondary: 'text-slate-400', summary: 'from-white to-slate-100 text-teal-900', accent: 'text-emerald-400', icon: '#fff' },
+            { id: 'neon_night', name: 'ניאון לילה', appBg: 'bg-black', card: 'bg-zinc-900 border-2 border-emerald-500/50', text: 'text-emerald-400', secondary: 'text-emerald-800', summary: 'from-emerald-600 to-green-400', accent: 'text-emerald-400', icon: '#10b981' },
+            { id: 'parchment_vibe', name: 'קלף יהודי', appBg: 'bg-gradient-to-br from-[#f3efca] via-[#e5dfac] to-[#d4cc8a]', card: 'bg-white shadow-xl', text: 'text-amber-950', secondary: 'text-amber-800/50', summary: 'from-[#451a03] to-black', accent: 'text-amber-700', icon: '#451a03' },
+            { id: 'arctic_frost', name: 'קרח ארקטי', appBg: 'bg-gradient-to-tr from-cyan-100 via-blue-200 to-indigo-300', card: 'bg-slate-900 text-white', text: 'text-white', secondary: 'text-slate-400', summary: 'from-blue-600 to-indigo-600', accent: 'text-cyan-400', icon: '#1e3a8a' },
+            { id: 'coffee_cream', name: 'קפה שמנת', appBg: 'bg-gradient-to-br from-[#443627] via-[#332a1e] to-black', card: 'bg-[#fafaf9]', text: 'text-[#443627]', secondary: 'text-stone-400', summary: 'from-orange-200 to-amber-100 text-stone-900', accent: 'text-orange-800', icon: '#fff' },
+            { id: 'sunrise_glow', name: 'זוהר הזריחה', appBg: 'bg-gradient-to-tr from-orange-400 via-rose-500 to-indigo-700', card: 'bg-white', text: 'text-slate-900', secondary: 'text-slate-400', summary: 'from-indigo-900 to-black', accent: 'text-rose-600', icon: '#fff' },
+            { id: 'slate_glass', name: 'זכוכית מעושנת', appBg: 'bg-gradient-to-br from-slate-400 via-slate-500 to-slate-600', card: 'bg-white/95 backdrop-blur-md', text: 'text-slate-900', secondary: 'text-slate-500', summary: 'from-slate-900 to-black', accent: 'text-slate-800', icon: '#fff' },
+            { id: 'berry_pop', name: 'פופ דובדבן', appBg: 'bg-gradient-to-tr from-rose-500 via-fuchsia-600 to-indigo-600', card: 'bg-white', text: 'text-rose-950', secondary: 'text-rose-400', summary: 'from-white to-rose-50 text-rose-600', accent: 'text-rose-600', icon: '#fff' },
+            { id: 'lemon_mint', name: 'לימון מנטה', appBg: 'bg-gradient-to-br from-yellow-300 via-lime-400 to-emerald-500', card: 'bg-slate-900', text: 'text-white', secondary: 'text-slate-400', summary: 'from-white to-yellow-50 text-emerald-900', accent: 'text-yellow-400', icon: '#fff' },
+            { id: 'midnight_gold', name: 'זהב חצות', appBg: 'bg-gradient-to-br from-slate-900 via-slate-950 to-black', card: 'bg-white', text: 'text-slate-900', secondary: 'text-slate-500', summary: 'from-amber-400 to-yellow-600 text-amber-950', accent: 'text-amber-600', icon: '#f59e0b' },
+            { id: 'pink_dream', name: 'חלום ורוד', appBg: 'bg-gradient-to-tr from-pink-300 via-rose-200 to-orange-100', card: 'bg-slate-800 text-white', text: 'text-white', secondary: 'text-slate-400', summary: 'from-rose-500 to-pink-600', accent: 'text-pink-300', icon: '#be123c' },
+            { id: 'earth_shade', name: 'צבעי אדמה', appBg: 'bg-gradient-to-br from-stone-400 via-stone-500 to-stone-600', card: 'bg-[#fffdfa]', text: 'text-stone-900', secondary: 'text-stone-400', summary: 'from-[#443627] to-black', accent: 'text-stone-700', icon: '#fff' },
+            { id: 'sky_high', name: 'תכלת שמיים', appBg: 'bg-gradient-to-br from-sky-400 via-blue-500 to-indigo-600', card: 'bg-white', text: 'text-sky-950', secondary: 'text-sky-500', summary: 'from-slate-900 to-black', accent: 'text-sky-600', icon: '#fff' },
+            { id: 'velvet_night', name: 'לילה קטיפתי', appBg: 'bg-gradient-to-tr from-purple-900 via-indigo-950 to-black', card: 'bg-white', text: 'text-indigo-950', secondary: 'text-indigo-300', summary: 'from-purple-500 to-indigo-500', accent: 'text-purple-600', icon: '#a78bfa' }
+        ];
 
         function App() {
-            // טעינת נתונים ראשונית מהזיכרון של הטלפון
-            const getInitialState = (key, defaultValue) => {
-                const saved = localStorage.getItem(key);
-                return saved !== null ? JSON.parse(saved) : defaultValue;
+            const getSaved = (key, def) => {
+                const s = localStorage.getItem(key);
+                try { return s ? JSON.parse(s) : def; } catch { return def; }
             };
 
-            const [mezuzotCount, setMezuzotCount] = useState(() => getInitialState('mezuzotCount', 0));
-            const [pricePerMezuzah, setPricePerMezuzah] = useState(() => getInitialState('pricePerMezuzah', 300));
-            const [debtType, setDebtType] = useState(() => getInitialState('debtType', 'merchant_owes'));
-            const [debtAmount, setDebtAmount] = useState(() => getInitialState('debtAmount', 0));
+            const [view, setView] = useState('main'); 
+            const [projects, setProjects] = useState(() => getSaved('projects_v15', []));
+            const [debts, setDebts] = useState(() => getSaved('debts_v15', []));
+            const [currentThemeId, setCurrentThemeId] = useState(() => getSaved('app_theme', 'pro_scribe'));
             const [greeting, setGreeting] = useState('');
+            const [modalConfig, setModalConfig] = useState({ isOpen: false, targetId: null, type: null });
+            
+            const [projectForm, setProjectForm] = useState({ id: null, name: '', client: '', pricePerUnit: '', readyUnits: 0 });
+            const [debtForm, setDebtForm] = useState({ id: null, type: 'owes_me', person: '', amount: '' });
 
-            // שמירה אוטומטית בכל שינוי
+            const theme = THEMES.find(t => t.id === currentThemeId) || THEMES[0];
+
             useEffect(() => {
-                localStorage.setItem('mezuzotCount', JSON.stringify(mezuzotCount));
-                localStorage.setItem('pricePerMezuzah', JSON.stringify(pricePerMezuzah));
-                localStorage.setItem('debtType', JSON.stringify(debtType));
-                localStorage.setItem('debtAmount', JSON.stringify(debtAmount));
-            }, [mezuzotCount, pricePerMezuzah, debtType, debtAmount]);
+                localStorage.setItem('projects_v15', JSON.stringify(projects));
+                localStorage.setItem('debts_v15', JSON.stringify(debts));
+                localStorage.setItem('app_theme', JSON.stringify(currentThemeId));
+            }, [projects, debts, currentThemeId]);
 
             useEffect(() => {
                 const hour = new Date().getHours();
-                setGreeting(hour < 12 ? 'בוקר טוב' : 'צהריים טובים');
+                if (hour >= 5 && hour < 12) setGreeting('בוקר טוב');
+                else if (hour >= 12 && hour < 18) setGreeting('צהריים טובים');
+                else if (hour >= 18 && hour < 22) setGreeting('ערב טוב');
+                else setGreeting('לילה טוב');
             }, []);
 
-            const mezuzotTotal = (Number(mezuzotCount) || 0) * (Number(pricePerMezuzah) || 0);
-            const currentDebt = Number(debtAmount) || 0;
-            const finalPayment = debtType === 'merchant_owes' 
-                ? mezuzotTotal + currentDebt 
-                : mezuzotTotal - currentDebt;
+            const projectsTotal = projects.reduce((sum, p) => sum + (Number(p.pricePerUnit) * Number(p.readyUnits) || 0), 0);
+            const totalOwesMe = debts.filter(d => d.type === 'owes_me').reduce((sum, d) => sum + (Number(d.amount) || 0), 0);
+            const totalIOwe = debts.filter(d => d.type === 'i_owe').reduce((sum, d) => sum + (Number(d.amount) || 0), 0);
+            const finalPayment = projectsTotal + totalOwesMe - totalIOwe;
+
+            const saveProject = () => {
+                if (!projectForm.name || !projectForm.pricePerUnit) return;
+                if (projectForm.id) {
+                    setProjects(projects.map(p => p.id === projectForm.id ? projectForm : p));
+                } else {
+                    setProjects([...projects, { ...projectForm, id: Date.now() }]);
+                }
+                setView('main');
+            };
+
+            const saveDebt = () => {
+                if (!debtForm.person || !debtForm.amount) return;
+                if (debtForm.id) {
+                    setDebts(debts.map(d => d.id === debtForm.id ? debtForm : d));
+                } else {
+                    setDebts([...debts, { ...debtForm, id: Date.now() }]);
+                }
+                setView('main');
+            };
+
+            const triggerDelete = (id, type, e) => {
+                if(e) e.stopPropagation();
+                setModalConfig({ isOpen: true, targetId: id, type });
+            };
+
+            const executeDelete = () => {
+                if (modalConfig.type === 'project') setProjects(projects.filter(p => p.id !== modalConfig.targetId));
+                else if (modalConfig.type === 'debt') setDebts(debts.filter(d => d.id !== modalConfig.targetId));
+                else if (modalConfig.type === 'all') { setProjects([]); setDebts([]); }
+                setModalConfig({ isOpen: false, targetId: null, type: null });
+                if (view !== 'main') setView('main');
+            };
+
+            const ConfirmationModal = () => {
+                if (!modalConfig.isOpen) return null;
+                return (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 modal-overlay animate-in fade-in duration-200">
+                        <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-xs shadow-2xl text-center animate-in zoom-in duration-300">
+                            <div className="flex justify-center mb-4"><IconAlert /></div>
+                            <h3 className="text-2xl font-extrabold text-slate-800 mb-2 leading-tight">למחוק לצמיתות?</h3>
+                            <p className="text-sm text-slate-500 mb-8 leading-relaxed">שימו לב: פעולה זו אינה ניתנת לביטול.</p>
+                            <div className="flex flex-col gap-3">
+                                <button onClick={executeDelete} className="bg-rose-500 text-white font-black py-4 rounded-2xl shadow-lg active:scale-95 transition-all uppercase tracking-widest">מחק עכשיו</button>
+                                <button onClick={() => setModalConfig({isOpen:false})} className="text-slate-400 font-bold py-2">ביטול</button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            if (view === 'settings') {
+                return (
+                    <div className={`pb-12 flex flex-col items-center min-h-screen w-full ${theme.appBg} animate-in slide-in-from-left duration-300`}>
+                        <header className="w-full bg-white/95 border-b border-slate-200 px-6 py-5 sticky top-0 z-20 shadow-md flex items-center justify-between">
+                            <button onClick={() => setView('main')} className="p-2 bg-slate-100 rounded-full text-slate-600"><IconArrowLeft /></button>
+                            <h1 className="text-xl font-bold text-slate-800">בחירת סגנון</h1>
+                            <div className="w-10"></div>
+                        </header>
+                        <div className="w-full max-w-md p-5 grid grid-cols-1 gap-4">
+                            {THEMES.map(t => (
+                                <button key={t.id} onClick={() => { setCurrentThemeId(t.id); setView('main'); }} 
+                                    className={`flex items-center justify-between p-5 rounded-[1.8rem] border-4 transition-all ${t.appBg} ${currentThemeId === t.id ? 'border-white shadow-2xl scale-[1.02]' : 'border-transparent opacity-90'}`}>
+                                    <span className={`font-black text-lg drop-shadow-sm ${t.id === 'clean_modern' || t.id.includes('arctic') ? 'text-slate-800' : 'text-white'}`}>{t.name}</span>
+                                    <div className={`w-10 h-10 rounded-2xl bg-gradient-to-br ${t.summary} border-2 border-white/50 shadow-inner`}></div>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                );
+            }
+
+            if (view === 'editProject' || view === 'editDebt') {
+                const isProject = view === 'editProject';
+                return (
+                    <div className={`pb-12 flex flex-col items-center min-h-screen w-full ${theme.appBg} animate-in slide-in-from-bottom duration-400`}>
+                        <header className="w-full bg-white/95 border-b border-slate-200 px-6 py-5 sticky top-0 z-20 shadow-sm flex items-center justify-between">
+                            <button onClick={() => setView('main')} className="p-2 bg-slate-100 rounded-full text-slate-600"><IconArrowLeft /></button>
+                            <h1 className="text-xl font-bold text-slate-800">{isProject ? (projectForm.id ? 'עריכת פרויקט' : 'פרויקט חדש') : 'התחשבנות'}</h1>
+                            <div className="w-10"></div>
+                        </header>
+                        <div className="w-full max-w-md p-6 space-y-6">
+                            <div className={`bg-white rounded-[2.5rem] p-8 space-y-6 contrast-card`}>
+                                {isProject ? (
+                                    <>
+                                        <div className="text-right">
+                                            <label className="block text-xs font-black text-slate-400 mb-2 uppercase tracking-widest mr-1">שם הפרויקט</label>
+                                            <input type="text" value={projectForm.name} onChange={e => setProjectForm({...projectForm, name: e.target.value})} className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl py-4 px-5 outline-none focus:border-emerald-500 font-bold text-lg text-slate-800" placeholder='למשל: תיקון ס"ת' />
+                                        </div>
+                                        <div className="text-right">
+                                            <label className="block text-xs font-black text-slate-400 mb-2 uppercase tracking-widest mr-1">לקוח</label>
+                                            <input type="text" value={projectForm.client} onChange={e => setProjectForm({...projectForm, client: e.target.value})} className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl py-4 px-5 outline-none focus:border-emerald-500 font-bold text-slate-800" placeholder="שם הלקוח" />
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="text-center">
+                                                <label className="block text-xs font-black text-slate-400 mb-2 uppercase tracking-widest">מחיר ליח'</label>
+                                                <input type="number" inputMode="numeric" value={projectForm.pricePerUnit} onChange={e => setProjectForm({...projectForm, pricePerUnit: e.target.value})} className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl py-4 text-center font-black text-xl text-emerald-600" />
+                                            </div>
+                                            <div className="text-center">
+                                                <label className="block text-xs font-black text-slate-400 mb-2 uppercase tracking-widest">כמות מוכנה</label>
+                                                <input type="number" inputMode="numeric" value={projectForm.readyUnits} onChange={e => setProjectForm({...projectForm, readyUnits: e.target.value})} className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl py-4 text-center font-black text-xl text-slate-800" />
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="text-right">
+                                            <label className="block text-xs font-black text-slate-400 mb-2 uppercase tracking-widest mr-1">שם האדם / סוחר</label>
+                                            <input type="text" value={debtForm.person} onChange={e => setDebtForm({...debtForm, person: e.target.value})} className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl py-4 px-5 outline-none focus:border-emerald-500 font-bold text-slate-800" placeholder="הכנס שם..." />
+                                        </div>
+                                        <div className="text-right">
+                                            <label className="block text-xs font-black text-slate-400 mb-2 uppercase tracking-widest mr-1">סכום (₪)</label>
+                                            <input type="number" inputMode="numeric" value={debtForm.amount} onChange={e => setDebtForm({...debtForm, amount: e.target.value})} className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl py-4 px-5 outline-none focus:border-emerald-500 text-left font-black text-2xl text-slate-800" />
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                            <button onClick={isProject ? saveProject : saveDebt} className="w-full bg-slate-900 text-white py-5 rounded-[2.5rem] font-black shadow-2xl active:scale-95 transition-all text-xl">אישור ושמירה</button>
+                            {(isProject ? projectForm.id : debtForm.id) && (
+                                <button onClick={(e) => triggerDelete(isProject ? projectForm.id : debtForm.id, isProject ? 'project' : 'debt', e)} className="w-full text-rose-500 font-bold py-2 flex items-center justify-center gap-2"><IconTrash /> מחק לצמיתות</button>
+                            )}
+                        </div>
+                        <ConfirmationModal />
+                    </div>
+                );
+            }
 
             return (
-                <div className="min-h-screen bg-slate-50 pb-10 flex flex-col items-center">
-                    <div className="w-full bg-white border-b border-slate-200 px-6 py-4 sticky top-0 z-10 shadow-sm text-center">
-                        <div className="flex items-center justify-center gap-2">
-                            <div className="text-amber-600"><IconScroll /></div>
-                            <h1 className="text-xl font-bold text-slate-800">{greeting} יוסי</h1>
+                <div className={`pb-12 flex flex-col items-center min-h-screen w-full ${theme.appBg} transition-all duration-700`}>
+                    <header className="w-full bg-white border-b border-black/5 px-6 py-5 sticky top-0 z-20 shadow-lg flex items-center justify-between">
+                        <button onClick={() => setView('settings')} className="p-3 bg-slate-100 rounded-[1.2rem] text-slate-600 hover:bg-emerald-100 active:scale-90 transition-all"><IconSettings /></button>
+                        <div className="flex items-center gap-3">
+                            <div className="text-emerald-500"><IconScroll /></div>
+                            <h1 className="text-2xl font-black tracking-tight text-slate-900">{greeting}, יוסי</h1>
                         </div>
-                    </div>
+                        <div className="w-12"></div>
+                    </header>
 
-                    <div className="w-full max-w-md p-4 space-y-4">
-                        {/* מלאי */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 text-right">
-                            <h2 className="font-bold text-slate-700 mb-4 flex items-center gap-2">
-                                <span className="w-1 h-5 bg-blue-500 rounded-full"></span> כמות מזוזות מוכנות
-                            </h2>
-                            <div className="flex items-center justify-between bg-slate-50 rounded-xl p-3 border border-slate-100">
-                                <button onClick={() => setMezuzotCount(p => Math.max(0, Number(p) - 1))} className="w-12 h-12 bg-white shadow-sm border border-slate-200 rounded-lg flex items-center justify-center"><IconMinus /></button>
-                                <div className="text-center">
-                                    <input type="number" inputMode="numeric" value={mezuzotCount} onChange={(e) => setMezuzotCount(e.target.value)} className="w-24 text-center text-3xl font-black text-slate-800 bg-transparent border-none focus:ring-0 p-0" />
-                                    <p className="text-[10px] text-slate-400 font-bold">הקלד כמות ידנית</p>
-                                </div>
-                                <button onClick={() => setMezuzotCount(p => Number(p) + 1)} className="w-12 h-12 bg-blue-500 shadow-sm rounded-lg flex items-center justify-center text-white"><IconPlus /></button>
+                    <div className="w-full max-w-md p-5 space-y-10 mt-4">
+                        <section>
+                            <div className="flex justify-between items-center mb-6 px-2">
+                                <h3 className={`text-xs font-black uppercase tracking-[0.3em] ${theme.id === 'clean_modern' ? 'text-slate-800' : 'text-white'}`}>פרויקטים פתוחים</h3>
+                                <span className="bg-black/20 text-white backdrop-blur-md px-4 py-1.5 rounded-full text-[10px] font-black border border-white/20">{projects.length} פרויקטים</span>
                             </div>
-                        </div>
-
-                        {/* מחיר */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 text-right">
-                            <h2 className="font-bold text-slate-700 mb-4 flex items-center gap-2">
-                                <span className="w-1 h-5 bg-amber-500 rounded-full"></span> מחיר למזוזה (₪)
-                            </h2>
-                            <div className="relative">
-                                <div className="absolute inset-y-0 right-3 flex items-center text-slate-400"><IconTag /></div>
-                                <input type="number" inputMode="numeric" value={pricePerMezuzah} onChange={(e) => setPricePerMezuzah(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pr-10 pl-4 text-left font-bold focus:ring-2 focus:ring-amber-500/20 focus:outline-none" />
+                            <div className="space-y-6">
+                                {projects.map(p => (
+                                    <div key={p.id} className={`${theme.card} rounded-[2.5rem] p-7 contrast-card relative overflow-hidden group`}>
+                                        <div className="flex justify-between items-start mb-6" onClick={() => { setProjectForm(p); setView('editProject'); }}>
+                                            <div className="text-right flex-1">
+                                                <p className={`font-black leading-tight text-2xl mb-1 ${theme.text}`}>{p.name}</p>
+                                                <p className={`text-sm italic opacity-70 font-bold ${theme.secondary}`}>לקוח: {p.client}</p>
+                                                <p className={`text-[10px] font-black mt-3 uppercase tracking-widest ${theme.accent}`}>{Number(p.pricePerUnit).toLocaleString()} ₪ ליח׳</p>
+                                            </div>
+                                            <div className="text-left">
+                                                <p className={`font-black text-3xl drop-shadow-sm ${theme.accent}`}>{(Number(p.pricePerUnit) * Number(p.readyUnits)).toLocaleString()} ₪</p>
+                                                <div className="flex justify-end gap-2 mt-2 opacity-30 group-hover:opacity-100 transition-opacity"><IconEdit size={20}/></div>
+                                            </div>
+                                        </div>
+                                        <div className="bg-black/5 rounded-[1.5rem] p-4 border border-black/5 flex items-center justify-between">
+                                            <span className={`text-xs font-black uppercase tracking-widest ${theme.text} opacity-60`}>כמות מוכנה:</span>
+                                            <div className="flex items-center gap-5">
+                                                <button onClick={() => updateProjectUnits(p.id, -1)} className="counter-btn bg-white border-2 border-black/10 text-slate-700 shadow-md"><IconMinus size={20}/></button>
+                                                <input type="number" inputMode="numeric" value={p.readyUnits} onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    setProjects(projects.map(pr => pr.id === p.id ? {...pr, readyUnits: isNaN(parseInt(val)) ? 0 : parseInt(val)} : pr));
+                                                }} className={`w-14 text-center text-3xl font-black bg-transparent border-none focus:ring-0 p-0 ${theme.text}`} />
+                                                <button onClick={() => updateProjectUnits(p.id, 1)} className={`counter-btn text-white shadow-xl bg-gradient-to-br ${theme.summary}`}><IconPlus size={20}/></button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                                <button onClick={() => { setProjectForm({ id: null, name: '', client: '', pricePerUnit: '', readyUnits: 0 }); setView('editProject'); }} 
+                                    className="w-full py-6 border-4 border-dashed border-white/40 rounded-[2.5rem] flex items-center justify-center gap-4 text-white font-black text-xl bg-white/10 hover:bg-white/20 transition-all shadow-2xl backdrop-blur-sm">
+                                    <IconPlus size={24}/> פרויקט חדש
+                                </button>
                             </div>
-                        </div>
+                        </section>
 
-                        {/* חובות */}
-                        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 text-right">
-                            <h2 className="font-bold text-slate-700 mb-4 flex items-center gap-2">
-                                <span className="w-1 h-5 bg-purple-500 rounded-full"></span> התחשבנות חוב/מקדמה
-                            </h2>
-                            <div className="space-y-4">
-                                <div className="flex p-1 bg-slate-100 rounded-lg">
-                                    <button onClick={() => setDebtType('merchant_owes')} className={`flex-1 py-2 rounded-md text-xs font-bold transition-all ${debtType === 'merchant_owes' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-500'}`}>הסוחר חייב לי</button>
-                                    <button onClick={() => setDebtType('sofer_owes')} className={`flex-1 py-2 rounded-md text-xs font-bold transition-all ${debtType === 'sofer_owes' ? 'bg-white shadow-sm text-rose-600' : 'text-slate-500'}`}>אני חייב לסוחר</button>
+                        <section className="space-y-8">
+                            <div className={`${theme.card} rounded-[2.5rem] p-8 contrast-card`}>
+                                <div className="flex justify-between items-center mb-8 border-b-2 border-black/5 pb-5">
+                                    <h3 className={`text-sm font-black uppercase tracking-[0.2em] ${theme.text}`}>חייבים לי</h3>
+                                    <button onClick={() => openNewDebt('owes_me')} className={`bg-gradient-to-br ${theme.summary} text-white p-2.5 rounded-2xl shadow-lg active:scale-90 transition-all`}><IconPlus size={20}/></button>
                                 </div>
-                                <div className="relative">
-                                    <div className="absolute inset-y-0 right-3 flex items-center text-slate-400"><IconWallet /></div>
-                                    <input type="number" inputMode="decimal" value={debtAmount || ''} onChange={(e) => setDebtAmount(e.target.value)} placeholder="הכנס סכום..." className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pr-10 pl-4 text-left font-bold focus:ring-2 focus:ring-blue-500/20 focus:outline-none" />
+                                <div className="space-y-5">
+                                    {debts.filter(d => d.type === 'owes_me').length === 0 && <p className="text-xs text-slate-400 text-center py-4 italic font-bold">אין חובות פעילים</p>}
+                                    {debts.filter(d => d.type === 'owes_me').map(d => (
+                                        <div key={d.id} className="flex justify-between items-center py-4 border-b border-black/5 last:border-0 hover:bg-black/5 transition-colors px-2 rounded-2xl group">
+                                            <div className="flex items-center gap-4">
+                                                <button onClick={(e) => triggerDelete(d.id, 'debt', e)} className="text-rose-400 hover:text-rose-600 p-2 transition-all"><IconTrash size={20} /></button>
+                                                <span className={`font-black text-lg ${theme.text}`}>{d.person}</span>
+                                            </div>
+                                            <div className="flex items-center gap-4">
+                                                <span className="font-black text-emerald-600 text-xl">+{Number(d.amount).toLocaleString()} ₪</span>
+                                                <button onClick={(e) => editDebt(d, e)} className="text-slate-300 hover:text-emerald-500 p-2 transition-all"><IconEdit size={20} /></button>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
-                        </div>
 
-                        {/* תוצאה סופית */}
-                        <div className="bg-slate-900 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden">
+                            <div className={`${theme.card} rounded-[2.5rem] p-8 contrast-card`}>
+                                <div className="flex justify-between items-center mb-8 border-b-2 border-black/5 pb-5">
+                                    <h3 className={`text-sm font-black uppercase tracking-[0.2em] ${theme.text}`}>אני חייב</h3>
+                                    <button onClick={() => openNewDebt('i_owe')} className="bg-rose-500 text-white p-2.5 rounded-2xl shadow-lg active:scale-90 transition-all"><IconPlus size={20}/></button>
+                                </div>
+                                <div className="space-y-5">
+                                    {debts.filter(d => d.type === 'i_owe').length === 0 && <p className="text-xs text-slate-400 text-center py-4 italic font-bold">אין התחייבויות</p>}
+                                    {debts.filter(d => d.type === 'i_owe').map(d => (
+                                        <div key={d.id} className="flex justify-between items-center py-4 border-b border-black/5 last:border-0 hover:bg-black/5 transition-colors px-2 rounded-2xl group">
+                                            <div className="flex items-center gap-4">
+                                                <button onClick={(e) => triggerDelete(d.id, 'debt', e)} className="text-rose-400 hover:text-rose-600 p-2 transition-all"><IconTrash size={20} /></button>
+                                                <span className={`font-black text-lg ${theme.text}`}>{d.person}</span>
+                                            </div>
+                                            <div className="flex items-center gap-4">
+                                                <span className="font-black text-rose-600 text-xl">-{Number(d.amount).toLocaleString()} ₪</span>
+                                                <button onClick={(e) => editDebt(d, e)} className="text-slate-300 hover:text-rose-500 p-2 transition-all"><IconEdit size={20} /></button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </section>
+
+                        <div className={`bg-gradient-to-br ${theme.summary} rounded-[3.5rem] p-12 text-white shadow-[0_30px_70px_-15px_rgba(0,0,0,0.5)] relative overflow-hidden mt-10 border border-white/20`}>
                             <div className="relative z-10 text-center">
-                                <p className="text-slate-400 text-sm mb-1">תשלום עתידי צפוי</p>
-                                <div className="flex items-baseline justify-center gap-2">
-                                    <span className="text-5xl font-extrabold tracking-tight">{finalPayment.toLocaleString()}</span>
-                                    <span className="text-2xl text-slate-400 font-light">₪</span>
+                                <p className="text-[10px] font-black uppercase tracking-[0.5em] opacity-60 mb-4">תשלום עתידי צפוי</p>
+                                <div className="flex items-baseline justify-center gap-2 mb-10">
+                                    <span className="text-8xl font-black tracking-tighter drop-shadow-2xl">{finalPayment.toLocaleString()}</span>
+                                    <span className="text-4xl font-bold opacity-40">₪</span>
                                 </div>
-                                <div className="mt-6 grid grid-cols-2 gap-2 border-t border-white/10 pt-4 text-[11px]">
-                                    <div className="bg-white/5 p-2 rounded-lg text-center">
-                                        <span className="block text-slate-500 mb-1 italic">{mezuzotCount} יח' × {pricePerMezuzah} ₪</span>
-                                        <span className="font-bold text-sm">{mezuzotTotal.toLocaleString()} ₪</span>
+                                <div className="grid grid-cols-2 gap-6">
+                                    <div className="bg-black/20 backdrop-blur-xl p-6 rounded-[2rem] border border-white/10 shadow-inner">
+                                        <span className="opacity-50 block mb-2 uppercase tracking-widest text-[9px] font-black">פרויקטים</span>
+                                        <span className="text-2xl font-black">{projectsTotal.toLocaleString()} ₪</span>
                                     </div>
-                                    <div className="bg-white/5 p-2 rounded-lg text-center">
-                                        <span className="block text-slate-500 mb-1 italic">יתרת חוב</span>
-                                        <span className={`font-bold text-sm ${debtType === 'merchant_owes' ? 'text-emerald-400' : 'text-rose-400'}`}>{debtType === 'merchant_owes' ? '+' : '-'} {currentDebt.toLocaleString()} ₪</span>
+                                    <div className="bg-black/20 backdrop-blur-xl p-6 rounded-[2rem] border border-white/10 shadow-inner">
+                                        <span className="opacity-50 block mb-2 uppercase tracking-widest text-[9px] font-black">התחשבנות</span>
+                                        <span className="text-2xl font-black" dir="ltr">{(totalOwesMe - totalIOwe >= 0 ? '+' : '') + (totalOwesMe - totalIOwe).toLocaleString()} ₪</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
+
+                        <div className="flex justify-center pt-10">
+                             <button onClick={() => triggerDelete(null, 'all')} className="text-[11px] font-black text-slate-900 flex items-center gap-2 bg-white/50 px-8 py-4 rounded-full border border-white shadow-xl hover:bg-rose-50 transition-all active:scale-95 uppercase tracking-widest">
+                                <IconTrash size={16}/> איפוס נתונים
+                             </button>
+                        </div>
+                        <p className={`text-[10px] font-black uppercase tracking-[0.6em] text-center pt-12 pb-16 ${theme.id === 'clean_modern' || theme.id.includes('arctic') ? 'text-slate-400' : 'text-white/40'}`}>
+                            Yossi • Master Scribe • v15.0
+                        </p>
                     </div>
+                    <ConfirmationModal />
                 </div>
             );
         }
